@@ -138,6 +138,7 @@ struct __gf_dash_segmenter
 	Double max_segment_duration;
 	Bool no_cache;
 	Bool disable_loop;
+	Bool single_period;
 };
 
 struct _dash_segment_input
@@ -2712,7 +2713,7 @@ restart_fragmentation_pass:
 			gf_cfg_set_key(dasher->dash_ctx, RepSecName, "Bandwidth", sOpt);
 		}
 		//done with this file
-		if ((nb_tracks_done==count) && dasher->disable_loop) {
+		if ((nb_tracks_done==count) && dasher->disable_loop && !dasher->single_period) {
 			dasher->force_period_end = GF_TRUE;
 		}
 
@@ -5941,6 +5942,14 @@ GF_Err gf_dasher_enable_loop_inputs(GF_DASHSegmenter *dasher, Bool do_loop)
 {
 	if (!dasher) return GF_BAD_PARAM;
 	dasher->disable_loop = do_loop ? GF_FALSE : GF_TRUE;
+	return GF_OK;
+}
+
+GF_EXPORT
+GF_Err gf_dasher_enable_single_period(GF_DASHSegmenter *dasher, Bool single_period)
+{
+	if (!dasher) return GF_BAD_PARAM;
+	dasher->single_period = single_period ? GF_TRUE : GF_FALSE;
 	return GF_OK;
 }
 
