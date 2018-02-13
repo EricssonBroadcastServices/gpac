@@ -1944,6 +1944,7 @@ static u32 run_for=0;
 static u32 dash_cumulated_time,dash_prev_time,dash_now_time;
 static Bool no_cache=GF_FALSE;
 static Bool no_loop=GF_FALSE;
+static Bool single_period = GF_FALSE;
 
 u32 mp4box_cleanup(u32 ret_code) {
 	if (mpd_base_urls) {
@@ -3274,6 +3275,9 @@ Bool mp4box_parse_args(int argc, char **argv)
 		else if (!stricmp(arg, "-no-loop")) {
 			no_loop = GF_TRUE;
 		}
+		else if (!stricmp(arg, "-single-period")) {
+			single_period = GF_TRUE;
+		}
 		else if (!stricmp(arg, "-segment-ext")) {
 			CHECK_NEXT_ARG
 			seg_ext = argv[i + 1];
@@ -4084,6 +4088,7 @@ int mp4boxMain(int argc, char **argv)
 		if (!e) e = gf_dasher_enable_cached_inputs(dasher, no_cache);
 		if (!e) e = gf_dasher_set_test_mode(dasher,force_test_mode);
 		if (!e) e = gf_dasher_enable_loop_inputs(dasher, ! no_loop);
+		if (!e) e = gf_dasher_enable_single_period(dasher, single_period);
 
 		for (i=0; i < nb_dash_inputs; i++) {
 			if (!e) e = gf_dasher_add_input(dasher, &dash_inputs[i]);
