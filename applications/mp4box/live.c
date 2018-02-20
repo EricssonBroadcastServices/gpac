@@ -958,4 +958,98 @@ u32 grab_live_m2ts(const char *grab_m2ts, const char *grab_ifce, const char *out
 
 #endif /* GPAC_DISABLE_MPEG2TS */
 
+#include <gpac/atsc.h>
+
+static u32 nb_services=0;
+void atsc_on_evt(void *udta, GF_ATSCEventType evt, u32 evt_param, GF_ATSCEventFileInfo *info)
+{
+	switch (evt) {
+	case GF_ATSC_EVT_SERVICE_FOUND:
+		fprintf(stderr, "found service id %d\n", evt_param);
+		nb_services++;
+		break;
+	case GF_ATSC_EVT_SERVICE_SCAN:
+		fprintf(stderr, "Done scaning all services\n");
+		break;
+	default:
+		break;
+	}
+}
+
+static void atsc_stats(GF_ATSCDmx *atscd, u32 now)
+{
+	Double rate=0.0;
+	u64 st = gf_atsc_dmx_get_first_packet_time(atscd);
+	u64 et = gf_atsc_dmx_get_last_packet_time(atscd);
+	u64 nb_pck = gf_atsc_dmx_get_nb_packets(atscd);
+	u64 nb_bytes = gf_atsc_dmx_get_recv_bytes(atscd);
+
+	et -= st;
+	if (et) {
+		rate = (Double)nb_bytes*8;
+		rate /= et;
+	}
+	if (now) {
+		fprintf(stderr, "                                                                                                 \r");
+		fprintf(stderr, "At %us stats: "LLU" bytes "LLU" packets in "LLU" ms rate %.02f mbps\r", now/1000, nb_bytes, nb_pck, et/1000, rate);
+	} else {
+		fprintf(stderr, "\nFinal stats: "LLU" bytes "LLU" packets in "LLU" ms rate %.02f mbps\n", nb_bytes, nb_pck, et/1000, rate);
+	}
+}
+
+u32 grab_atsc_session(const char *dir, const char *ifce, s32 serviceID, s32 atsc_max_segs, u32 stats_rate)
+{
+	GF_ATSCDmx *atscd;
+	Bool run = GF_TRUE;
+	u32 nb_stats=1;
+	u32 start_time = gf_sys_clock();
+
+	atscd = gf_atsc_dmx_new(ifce, dir, 0);
+	if (!atscd) {
+		fprintf(stderr, "Failed to create ATSC3 demuxer\n");
+		return 1;
+	}
+	gf_atsc_set_callback(atscd, atsc_on_evt, NULL);
+	gf_atsc_tune_in(atscd, (u32) serviceID);
+	if (atsc_max_segs>=0)
+		gf_atsc_set_max_objects_store(atscd, (u32) atsc_max_segs);
+
+	if (!dir) fprintf(stderr, "No output dir, ATSC3 demux inspect mode only\n");
+	fprintf(stderr, "Starting ATSC3 demux, press 'q' to stop\n");
+
+	while (atscd && run) {
+		Bool is_empty = GF_TRUE;
+		GF_Err e = gf_atsc_dmx_process(atscd);
+		if (e != GF_IP_NETWORK_EMPTY) is_empty = GF_FALSE;
+
+		if (gf_prompt_has_input()) {
+			u8 c = gf_prompt_get_char();
+			switch (c) {
+			case 'q':
+				run = GF_FALSE;
+				break;
+			}
+		}
+
+		if (is_empty) {
+			u32 st, now = gf_sys_clock()- start_time;
+			gf_sleep(1);
+			if (!nb_services && (now >=10000)) {
+				fprintf(stderr, "\nNo ATSC3 service found in %u ms, aborting\n", now);
+				run = GF_FALSE;
+			}
+			if (stats_rate) {
+				st = gf_sys_clock();
+				if (now >= nb_stats*1000*stats_rate) {
+					nb_stats+=1;
+					atsc_stats(atscd, now);
+				}
+			}
+		}
+	}
+	atsc_stats(atscd, 0);
+	gf_atsc_dmx_del(atscd);
+	fprintf(stderr, "\n");
+	return 0;
+}
 
