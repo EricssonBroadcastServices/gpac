@@ -2887,7 +2887,7 @@ Bool mp4box_parse_args(int argc, char **argv)
 			PrintUsage();
 			return 1;
 		}
-		else if (!stricmp(arg, "-version") || !stricmp(arg, "-v")) {
+		else if (!stricmp(arg, "-version")) {
 			PrintVersion();
 			return 1;
 		}
