@@ -1877,7 +1877,7 @@ restart_fragmentation_pass:
 					if (e)
 						goto err_exit;
 
-					GF_LOG(GF_LOG_DEBUG, GF_LOG_DASH, ("[DASH] Segment %s, fragment %d, current fragment length %d, adding sample with DTS %d from TrackID %d\n", SegmentName, nbFragmentInSegment, tf->FragmentLength, sample->DTS, tf->TrackID));
+					GF_LOG(GF_LOG_DEBUG, GF_LOG_DASH, ("[DASH] Segment %s, fragment %d, current fragment length "LLU", adding sample with DTS "LLU" from TrackID %d\n", SegmentName, nbFragmentInSegment, tf->FragmentLength, sample->DTS, tf->TrackID));
 
 					if (sample->DTS + sample->CTS_Offset < tf->min_cts_in_segment)
 						tf->min_cts_in_segment = sample->DTS + sample->CTS_Offset;
