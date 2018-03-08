@@ -1776,7 +1776,7 @@ restart_fragmentation_pass:
 					sample_duration = (u32) (next->DTS - sample->DTS);
 				}
 				//in dynamic mode we will loop, pay attention to the timing
-				else if (!dasher->disable_loop) {
+				else if (!dasher->disable_loop || dasher->single_period) {
 					if (clamp_duration) {
 						/* simple round with (int)+.5 to avoid trucating .99999 to 0 */
 						sample_duration = (u32)(clamp_duration*tf->TimeScale - (sample->DTS - tf->loop_ts_offset) + 0.5);
@@ -1790,9 +1790,12 @@ restart_fragmentation_pass:
 					}
 
 					tf->loop_ts_offset = tf->next_sample_dts + sample_duration;
-					loop_track = GF_TRUE;
-					next = gf_isom_get_sample(input, tf->OriginalTrack, 1, &j);
-					next->DTS += tf->loop_ts_offset;
+					if (!dasher->disable_loop)
+					{
+						loop_track = GF_TRUE;
+						next = gf_isom_get_sample(input, tf->OriginalTrack, 1, &j);
+						next->DTS += tf->loop_ts_offset;
+					}
 				} else if (clamp_duration) {
 					sample_duration = (u32)(clamp_duration*tf->TimeScale - (sample->DTS - tf->loop_ts_offset) + 0.5);
 					force_eos = GF_TRUE;
@@ -1969,7 +1972,7 @@ restart_fragmentation_pass:
 									// method 1.
 									if (tf->all_sample_raps || dasher->split_on_bound) {
 
-										if (next_sap_time * dasher->dash_scale / (double)tf->TimeScale <= (cur_seg - 1)*MaxSegmentDuration) {
+										if (((tf->InitialTSOffset + next_sap_time) * dasher->dash_scale) / (double)tf->TimeScale <= (cur_seg - 1)*MaxSegmentDuration) {
 												if (SegmentDuration + next_sap_dur > MaxSegmentDuration)
 													GF_LOG(GF_LOG_DEBUG, GF_LOG_DASH, ("[DASH] Adjusting for drift for segment %d trackID %d: \tnext_sap_time: %.2f\tsegment_boundary: %d\t segment_duration: %d\n", cur_seg, tf->TrackID, next_sap_time * dasher->dash_scale / (double)tf->TimeScale, (cur_seg - 1)*MaxSegmentDuration, next_sap_dur));
 										}
