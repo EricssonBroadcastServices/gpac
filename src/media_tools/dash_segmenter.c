@@ -6638,8 +6638,8 @@ GF_Err gf_dasher_process(GF_DASHSegmenter *dasher, Double sub_duration)
 				else if (dash_input->media_duration) d = dash_input->media_duration;
 
 				duration = atof(opt);
-
-				if (dash_input->period_duration + duration > d) {
+				
+				if (!dasher->single_period && dash_input->period_duration + duration > d) {
 					dash_input->period_duration = d - duration;
 				}
 				dash_input->period_duration += duration;
